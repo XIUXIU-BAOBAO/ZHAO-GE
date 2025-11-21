@@ -19,7 +19,7 @@
         .chapter-item { background: #bdc3c7; color: white; text-align: center; padding: 6px 3px; border-radius: 4px; cursor: pointer; transition: all 0.3s; font-size: 12px; position: relative; overflow: hidden; }
         .chapter-item:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
         .chapter-item.active { border: 2px solid #3498db; }
-        .chapter-item .progress-bar { position: absolute; bottom: 0; left: 0; height: 6px; transition: width 0.3s; }
+        .chapter-item .progress-bar { position: absolute; bottom: 0; left: 0; height: 6px; transition: width 0.3s; } /* 加宽2倍 */
         .questions-panel { flex: 1; background: white; border-radius: 8px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); padding: 20px; }
         .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #eee; }
         .panel-title { font-size: 20px; font-weight: bold; color: #2c3e50; }
@@ -37,7 +37,7 @@
         .question-item.answered { background: #3498db; }
         .question-item.correct { background: #2ecc71; }
         .question-item.wrong { background: #e74c3c; }
-        .question-item.marked { background: #3498db; }
+        .question-item.marked { background: #3498db; } /* 标记的题目显示蓝色 */
         .question-detail { background: #f8f9fa; border-radius: 8px; padding: 20px; margin-top: 20px; }
         .question-title { font-size: 18px; margin-bottom: 15px; color: #2c3e50; }
         .options { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
@@ -73,11 +73,13 @@
         .file-label { display: inline-block; padding: 10px 20px; background: #1abc9c; color: white; border-radius: 4px; cursor: pointer; transition: all 0.3s; }
         .file-label:hover { background: #16a085; }
         
+        /* 错题本和标记本样式 */
         .special-books { display: flex; gap: 10px; margin-bottom: 15px; }
         .special-book-btn { flex: 1; padding: 10px; background: #9b59b6; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; transition: all 0.3s; text-align: center; }
         .special-book-btn:hover { background: #8e44ad; }
         .special-book-btn.active { background: #e74c3c; font-weight: bold; }
         
+        /* 打乱恢复按钮样式 */
         .shuffle-section { margin-top: 15px; text-align: center; }
         .shuffle-btn { padding: 8px 15px; background: #9b59b6; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; transition: all 0.3s; }
         .shuffle-btn:hover { background: #8e44ad; }
@@ -103,6 +105,7 @@
             <div class="chapters-panel">
                 <div class="chapters-title">章节列表</div>
                 
+                <!-- 错题本和标记本 -->
                 <div class="special-books">
                     <button class="special-book-btn" id="wrongQuestionsBook">错题本</button>
                     <button class="special-book-btn" id="markedQuestionsBook">标记本</button>
