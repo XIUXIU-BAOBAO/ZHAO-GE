@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>职业健康答题系统</title>
     <style>
+        /* 样式代码保持不变，与之前相同 */
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: "Microsoft YaHei", sans-serif; }
         body { background-color: #f5f7fa; color: #333; line-height: 1.6; }
         .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
@@ -19,7 +20,7 @@
         .chapter-item { background: #bdc3c7; color: white; text-align: center; padding: 6px 3px; border-radius: 4px; cursor: pointer; transition: all 0.3s; font-size: 12px; position: relative; overflow: hidden; }
         .chapter-item:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
         .chapter-item.active { border: 2px solid #3498db; }
-        .chapter-item .progress-bar { position: absolute; bottom: 0; left: 0; height: 6px; transition: width 0.3s; } /* 加宽2倍 */
+        .chapter-item .progress-bar { position: absolute; bottom: 0; left: 0; height: 6px; transition: width 0.3s; }
         .questions-panel { flex: 1; background: white; border-radius: 8px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); padding: 20px; }
         .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #eee; }
         .panel-title { font-size: 20px; font-weight: bold; color: #2c3e50; }
@@ -37,7 +38,7 @@
         .question-item.answered { background: #3498db; }
         .question-item.correct { background: #2ecc71; }
         .question-item.wrong { background: #e74c3c; }
-        .question-item.marked { background: #3498db; } /* 标记的题目显示蓝色 */
+        .question-item.marked { background: #3498db; }
         .question-detail { background: #f8f9fa; border-radius: 8px; padding: 20px; margin-top: 20px; }
         .question-title { font-size: 18px; margin-bottom: 15px; color: #2c3e50; }
         .options { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
@@ -72,26 +73,16 @@
         .file-input { display: none; }
         .file-label { display: inline-block; padding: 10px 20px; background: #1abc9c; color: white; border-radius: 4px; cursor: pointer; transition: all 0.3s; }
         .file-label:hover { background: #16a085; }
-        
-        /* 错题本和标记本样式 */
         .special-books { display: flex; gap: 10px; margin-bottom: 15px; }
         .special-book-btn { flex: 1; padding: 10px; background: #9b59b6; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; transition: all 0.3s; text-align: center; }
         .special-book-btn:hover { background: #8e44ad; }
         .special-book-btn.active { background: #e74c3c; font-weight: bold; }
-        
-        /* 打乱恢复按钮样式 */
         .shuffle-section { margin-top: 15px; text-align: center; }
         .shuffle-btn { padding: 8px 15px; background: #9b59b6; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; transition: all 0.3s; }
         .shuffle-btn:hover { background: #8e44ad; }
         .shuffle-btn.shuffled { background: #e74c3c; }
-        
-        /* 加载提示样式 */
-        .loading-indicator {
-            text-align: center;
-            padding: 20px;
-            color: #3498db;
-        }
-        
+        .loading-indicator { text-align: center; padding: 20px; color: #3498db; }
+        .version-info { position: absolute; top: 10px; left: 10px; background: #95a5a6; color: white; padding: 5px 10px; border-radius: 4px; font-size: 12px; }
         @media (max-width: 768px) { 
             .main-content { flex-direction: column; } 
             .chapters-panel { flex: none; } 
@@ -103,6 +94,7 @@
 <body>
     <div class="container">
         <header>
+            <div class="version-info" id="versionInfo">题库版本: 加载中...</div>
             <h1>职业健康答题系统</h1>
             <p class="description">共72章，支持单选题、多选题和判断题</p>
             <div class="overall-progress" id="overallProgress">总进度: 0%</div>
@@ -112,7 +104,6 @@
             <div class="chapters-panel">
                 <div class="chapters-title">章节列表</div>
                 
-                <!-- 错题本和标记本 -->
                 <div class="special-books">
                     <button class="special-book-btn" id="wrongQuestionsBook">错题本</button>
                     <button class="special-book-btn" id="markedQuestionsBook">标记本</button>
@@ -136,6 +127,7 @@
                         <button class="btn btn-warning" id="exportBtn">导出题库</button>
                         <button class="btn btn-danger" id="clearChapterBtn">清空本章内容</button>
                         <button class="btn btn-info" id="clearAllBtn">清空所有数据</button>
+                        <button class="btn btn-success" id="forceReloadBtn">强制重新加载题库</button>
                     </div>
                     <div class="format-example">
                         <p><strong>格式说明：</strong></p>
@@ -197,19 +189,28 @@
         let userAnswers = {};
         let currentMode = 'chapter'; // 'chapter', 'wrong', 'marked'
         
+        // 题库版本控制
+        const QUESTION_BANK_VERSION = '1.1'; // 每次更新题库时修改此版本号
+        
         // 初始化
         document.addEventListener('DOMContentLoaded', function() {
             initChapters();
             loadChapterOrderState();
             
-            // 先尝试从本地存储加载，如果没有则加载默认题库
+            // 检查版本号，如果版本不同则重新加载
+            const storedVersion = localStorage.getItem('questionBankVersion');
             const storedBank = localStorage.getItem('questionBank');
-            if (storedBank && JSON.parse(storedBank) && Object.keys(JSON.parse(storedBank)).length > 0) {
+            
+            if (storedBank && storedVersion === QUESTION_BANK_VERSION) {
+                // 版本一致，使用本地存储
                 loadQuestionBankFromStorage();
                 updateStats();
                 updateOverallProgress();
                 hideLoadingIndicator();
+                updateVersionInfo('已加载本地题库 v' + QUESTION_BANK_VERSION);
             } else {
+                // 版本不一致或没有本地存储，加载远程题库
+                localStorage.removeItem('questionBank'); // 清除旧数据
                 loadDefaultQuestionBank();
             }
             
@@ -218,6 +219,7 @@
             document.getElementById('exportBtn').addEventListener('click', exportQuestionBank);
             document.getElementById('clearChapterBtn').addEventListener('click', clearCurrentChapter);
             document.getElementById('clearAllBtn').addEventListener('click', clearAllData);
+            document.getElementById('forceReloadBtn').addEventListener('click', forceReloadQuestionBank);
             
             // 添加JSON文件导入事件
             document.getElementById('jsonFileInput').addEventListener('change', importFromJsonFile);
@@ -227,10 +229,28 @@
             document.getElementById('markedQuestionsBook').addEventListener('click', showMarkedQuestions);
         });
         
+        // 强制重新加载题库
+        function forceReloadQuestionBank() {
+            if (confirm('确定要强制重新加载题库吗？这将清除本地存储的题库数据。')) {
+                localStorage.removeItem('questionBank');
+                localStorage.removeItem('questionBankVersion');
+                document.getElementById('loadingIndicator').style.display = 'block';
+                document.getElementById('loadingIndicator').textContent = '正在重新加载题库...';
+                loadDefaultQuestionBank();
+            }
+        }
+        
+        // 更新版本信息显示
+        function updateVersionInfo(text) {
+            document.getElementById('versionInfo').textContent = text;
+        }
+        
         // 加载默认题库函数
         function loadDefaultQuestionBank() {
-            // 替换为您的JSON文件实际URL
-            const defaultBankUrl = './question-bank.json';
+            // 添加版本号和随机参数防止缓存
+            const defaultBankUrl = './question-bank.json?v=' + QUESTION_BANK_VERSION + '&t=' + new Date().getTime();
+            
+            updateVersionInfo('正在加载题库 v' + QUESTION_BANK_VERSION + '...');
             
             fetch(defaultBankUrl)
                 .then(response => {
@@ -242,15 +262,19 @@
                 .then(data => {
                     questionBank = data;
                     saveQuestionBankToStorage();
+                    // 保存版本号到本地存储
+                    localStorage.setItem('questionBankVersion', QUESTION_BANK_VERSION);
                     updateChapterImportStatus();
                     updateStats();
                     updateOverallProgress();
                     hideLoadingIndicator();
+                    updateVersionInfo('题库版本: v' + QUESTION_BANK_VERSION);
                     
-                    console.log('默认题库加载成功');
+                    console.log('默认题库加载成功，版本:' + QUESTION_BANK_VERSION);
                 })
                 .catch(error => {
                     console.error('加载默认题库失败:', error);
+                    updateVersionInfo('题库加载失败，使用本地缓存');
                     // 如果远程加载失败，尝试从本地存储加载
                     loadQuestionBankFromStorage();
                     hideLoadingIndicator();
@@ -264,6 +288,9 @@
                 loadingIndicator.style.display = 'none';
             }
         }
+        
+        // 其余函数保持不变（initChapters, updateChapterImportStatus, selectChapter等）
+        // ... [这里省略了其余函数的代码，因为它们与之前相同]
         
         // 初始化章节列表
         function initChapters() {
